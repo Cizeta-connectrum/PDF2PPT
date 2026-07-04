@@ -18,10 +18,13 @@ import io
 from dataclasses import dataclass
 
 import fitz  # PyMuPDF
+from PIL import Image
 from pptx import Presentation
 from pptx.util import Pt
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
+
+import ocr
 
 EMU_PER_POINT = 12700
 DEFAULT_DPI = 200
@@ -153,13 +156,22 @@ def _add_text_span_box(slide, span: dict) -> None:
         font.name = fontname
 
 
-def convert_editable_mode(doc: fitz.Document, prs: Presentation, dpi: int = DEFAULT_DPI) -> None:
+def convert_editable_mode(
+    doc: fitz.Document, prs: Presentation, dpi: int = DEFAULT_DPI, use_ocr: bool = True
+) -> None:
     """Rebuild each page as a background image (all vector art, photos and
     gradients rasterized, exactly as in image mode) with the original text
-    content surgically removed via PDF redaction, then overlay real,
-    independently editable PowerPoint text boxes matching the extracted
-    text's position/font/size/color. This keeps full visual fidelity for
-    everything that isn't text while making the text itself editable.
+    content surgically removed, then overlay real, independently editable
+    PowerPoint text boxes matching the extracted text's position/font/
+    size/color. This keeps full visual fidelity for everything that isn't
+    text while making the text itself editable.
+
+    Pages with a native PDF text layer have their text removed via PDF
+    redaction (exact, keeps images/vector graphics untouched). Pages with
+    NO native text at all (e.g. a flattened screenshot/scan page) fall
+    back to OCR: the recognized text regions are painted over with the
+    locally sampled background color and reconstructed as text boxes with
+    an estimated font size/color.
     """
     first_page = doc[0]
     slide_w_pt = first_page.rect.width
@@ -174,11 +186,6 @@ def convert_editable_mode(doc: fitz.Document, prs: Presentation, dpi: int = DEFA
     for page in doc:
         spans = _extract_visible_text_spans(page)
 
-        for span in spans:
-            page.add_redact_annot(fitz.Rect(span["bbox"]), fill=None)
-        if spans:
-            page.apply_redactions(images=0, graphics=0, text=0)
-
         slide = prs.slides.add_slide(blank_layout)
         left, top, scale_w, scale_h = _fit_size(
             page.rect.width, page.rect.height, slide_w_pt, slide_h_pt
@@ -186,9 +193,26 @@ def convert_editable_mode(doc: fitz.Document, prs: Presentation, dpi: int = DEFA
         sx = scale_w / page.rect.width
         sy = scale_h / page.rect.height
 
-        pix = page.get_pixmap(matrix=matrix, alpha=False)
+        if spans:
+            for span in spans:
+                page.add_redact_annot(fitz.Rect(span["bbox"]), fill=None)
+            page.apply_redactions(images=0, graphics=0, text=0)
+
+            pix = page.get_pixmap(matrix=matrix, alpha=False)
+            img_bytes = pix.tobytes("png")
+        elif use_ocr:
+            pix = page.get_pixmap(matrix=matrix, alpha=False)
+            img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
+            spans = ocr.extract_ocr_spans(img, dpi)
+            buf = io.BytesIO()
+            img.save(buf, format="PNG")
+            img_bytes = buf.getvalue()
+        else:
+            pix = page.get_pixmap(matrix=matrix, alpha=False)
+            img_bytes = pix.tobytes("png")
+
         slide.shapes.add_picture(
-            io.BytesIO(pix.tobytes("png")),
+            io.BytesIO(img_bytes),
             _pt_to_emu(left),
             _pt_to_emu(top),
             width=_pt_to_emu(scale_w),
@@ -210,7 +234,9 @@ def convert_editable_mode(doc: fitz.Document, prs: Presentation, dpi: int = DEFA
             _add_text_span_box(slide, scaled_span)
 
 
-def convert_pdf_to_pptx(pdf_path: str, pptx_path: str, mode: str = "image", dpi: int = DEFAULT_DPI) -> ConversionResult:
+def convert_pdf_to_pptx(
+    pdf_path: str, pptx_path: str, mode: str = "image", dpi: int = DEFAULT_DPI, use_ocr: bool = True
+) -> ConversionResult:
     if mode not in ("image", "editable"):
         raise ValueError(f"Unknown mode: {mode}")
 
@@ -222,7 +248,7 @@ def convert_pdf_to_pptx(pdf_path: str, pptx_path: str, mode: str = "image", dpi:
         if mode == "image":
             convert_image_mode(doc, prs, dpi=dpi)
         else:
-            convert_editable_mode(doc, prs, dpi=dpi)
+            convert_editable_mode(doc, prs, dpi=dpi, use_ocr=use_ocr)
         prs.save(pptx_path)
         return ConversionResult(page_count=doc.page_count, mode=mode)
     finally:
