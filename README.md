@@ -1,0 +1,39 @@
+# PDF2PPT
+
+PDFファイルを忠実にPowerPoint(.pptx)へ変換するWebアプリです。
+
+## 変換モード
+
+- **画像モード**: 各ページを高解像度画像としてスライドに全面貼り付け。レイアウト・フォント・図形を完全に再現しますが、テキストは編集できません。
+- **編集可能モード**: テキストと画像をPDFから抽出し、位置・フォントサイズ・太字/斜体・色を再現しながら編集可能なPowerPointオブジェクトとして再配置します。複雑なベクター図形やテーブルはレイアウトが多少崩れる場合があります。
+
+## セットアップ
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+## 起動
+
+```bash
+source venv/bin/activate
+python app/app.py
+```
+
+ブラウザで http://localhost:5000 を開き、PDFをアップロードして変換モードを選択してください。
+
+## テスト
+
+```bash
+source venv/bin/activate
+pip install pytest
+python -m pytest tests/ -v
+```
+
+## 仕組み
+
+- PDFのレンダリング・解析には [PyMuPDF](https://pymupdf.readthedocs.io/) を使用。
+- PPTX生成には [python-pptx](https://python-pptx.readthedocs.io/) を使用。
+- アップロードされたファイルは一時ディレクトリに保存され、レスポンス送信後に自動削除されます。

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PDF to PPT Converter</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <main class="card">
+    <h1>PDF &rarr; PPTX 変換</h1>
+    <p class="lead">PDFファイルを忠実にPowerPoint形式へ変換します。</p>
+
+    <form id="convert-form">
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="pdf_file" name="pdf_file" accept="application/pdf,.pdf" required>
+        <p id="dropzone-label">ここにPDFをドラッグ&ドロップ、またはクリックして選択</p>
+      </div>
+
+      <fieldset class="mode-select">
+        <legend>変換モード</legend>
+        <label class="mode-option">
+          <input type="radio" name="mode" value="image" checked>
+          <span>
+            <strong>画像モード(完全再現)</strong>
+            <small>各ページを高解像度画像として貼り付け。レイアウト・フォント・図形を完全に再現しますが、テキストは編集不可になります。</small>
+          </span>
+        </label>
+        <label class="mode-option">
+          <input type="radio" name="mode" value="editable">
+          <span>
+            <strong>編集可能モード</strong>
+            <small>テキストと画像を個別のオブジェクトとして抽出し、PowerPoint上で編集可能な状態で再配置します。複雑なPDFではレイアウトが多少崩れる場合があります。</small>
+          </span>
+        </label>
+      </fieldset>
+
+      <button type="submit" id="submit-btn">変換してダウンロード</button>
+    </form>
+
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+  </main>
+
+  <script src="{{ url_for('static', filename='main.js') }}"></script>
+</body>
+</html>

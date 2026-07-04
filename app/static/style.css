@@ -1,0 +1,146 @@
+:root {
+  color-scheme: light dark;
+  --bg: #f5f6f8;
+  --card-bg: #ffffff;
+  --text: #1c1e21;
+  --muted: #616770;
+  --accent: #d24726;
+  --accent-hover: #b23a1d;
+  --border: #d9dbe0;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #17181a;
+    --card-bg: #232427;
+    --text: #f0f1f3;
+    --muted: #a2a6ad;
+    --accent: #e8643f;
+    --accent-hover: #ff7d55;
+    --border: #3a3b3f;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif;
+  padding: 24px;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 32px;
+  max-width: 560px;
+  width: 100%;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+}
+
+h1 {
+  margin: 0 0 8px;
+  font-size: 1.6rem;
+}
+
+.lead {
+  margin: 0 0 24px;
+  color: var(--muted);
+}
+
+.dropzone {
+  position: relative;
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  padding: 32px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.dropzone.dragover {
+  border-color: var(--accent);
+  background: rgba(210, 71, 38, 0.06);
+}
+
+.dropzone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+#dropzone-label {
+  margin: 0;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.mode-select {
+  border: none;
+  padding: 0;
+  margin: 20px 0;
+}
+
+.mode-select legend {
+  font-weight: 600;
+  padding: 0 0 8px;
+}
+
+.mode-option {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.mode-option input {
+  margin-top: 4px;
+}
+
+.mode-option small {
+  display: block;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+button#submit-btn {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+button#submit-btn:hover {
+  background: var(--accent-hover);
+}
+
+button#submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.status {
+  margin-top: 16px;
+  min-height: 1.2em;
+  font-size: 0.95rem;
+}
+
+.status.error { color: var(--accent); }
+.status.success { color: #2a8a4a; }
