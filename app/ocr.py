@@ -37,25 +37,37 @@ def is_available() -> bool:
     return _available
 
 
-def _region_average(img: Image.Image, box, predicate=None) -> tuple[int, int, int]:
+def _foreground_color(
+    img: Image.Image, box, bg: tuple[int, int, int], top_fraction: float = 0.25
+) -> tuple[int, int, int]:
+    """Estimate the text (ink) color inside `box` as the average of the
+    pixels furthest (by color distance) from the already-known background
+    color `bg`. Using distance-from-background rather than "darker than
+    average" correctly handles both dark text on a light background AND
+    light/white text on a dark background (e.g. title banners).
+    """
     crop = img.crop(box).convert("RGB")
     pixels = list(crop.getdata())
-    if predicate is not None:
-        grays = [0.299 * r + 0.587 * g + 0.114 * b for r, g, b in pixels]
-        threshold = sum(grays) / len(grays) if grays else 0
-        pixels = [p for p, gr in zip(pixels, grays) if predicate(gr, threshold)] or pixels
     if not pixels:
         return (0, 0, 0)
-    n = len(pixels)
+
+    def dist2(p: tuple[int, int, int]) -> int:
+        return (p[0] - bg[0]) ** 2 + (p[1] - bg[1]) ** 2 + (p[2] - bg[2]) ** 2
+
+    scored = sorted(pixels, key=dist2, reverse=True)
+    if dist2(scored[0]) == 0:
+        # No contrast at all against the background (shouldn't normally
+        # happen for real text) - fall back to a plain average.
+        fg_pixels = pixels
+    else:
+        take = max(1, int(len(scored) * top_fraction))
+        fg_pixels = scored[:take]
+    n = len(fg_pixels)
     return (
-        sum(p[0] for p in pixels) // n,
-        sum(p[1] for p in pixels) // n,
-        sum(p[2] for p in pixels) // n,
+        sum(p[0] for p in fg_pixels) // n,
+        sum(p[1] for p in fg_pixels) // n,
+        sum(p[2] for p in fg_pixels) // n,
     )
-
-
-def _foreground_color(img: Image.Image, box) -> tuple[int, int, int]:
-    return _region_average(img, box, predicate=lambda gray, thr: gray < thr)
 
 
 def _background_color(img: Image.Image, box, margin: int = 4) -> tuple[int, int, int]:
@@ -129,8 +141,8 @@ def extract_ocr_spans(img: Image.Image, dpi: int) -> list[dict]:
     spans = []
     for line in lines.values():
         box = (line["left"], line["top"], line["right"], line["bottom"])
-        fg = _foreground_color(img, box)
         bg = _background_color(img, box)
+        fg = _foreground_color(img, box, bg)
         draw.rectangle(box, fill=bg)
         spans.append(
             {

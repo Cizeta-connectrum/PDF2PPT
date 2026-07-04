@@ -105,3 +105,15 @@ def test_editable_mode_falls_back_to_ocr(flattened_image_pdf, tmp_path):
     texts = " ".join(s.text_frame.text for s in slide.shapes if s.has_text_frame)
     assert "Overview" in texts or "Slide" in texts
     assert "Body" in texts or "flat image" in texts
+
+    # White title text on a dark banner and dark body text on a light
+    # background should each recover their own (very different) color,
+    # not both collapse to the same estimate.
+    colors = []
+    for shape in slide.shapes:
+        if shape.has_text_frame and shape.text_frame.paragraphs[0].runs:
+            run = shape.text_frame.paragraphs[0].runs[0]
+            colors.append(run.font.color.rgb)
+    assert len(colors) == 2
+    title_color, body_color = colors
+    assert abs(title_color[0] - body_color[0]) > 100  # clearly different brightness
