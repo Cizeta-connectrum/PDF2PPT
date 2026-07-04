@@ -22,7 +22,14 @@ source venv/bin/activate
 python app/app.py
 ```
 
-ブラウザで http://localhost:5000 を開き、PDFをアップロードして変換モードを選択してください。
+ブラウザで http://localhost:5001 を開き、PDFをアップロードして変換モードを選択してください。
+
+デフォルトのポートは5001です(macOSではAirPlay受信機能がポート5000を使用するため)。
+別のポートで起動したい場合は `PORT` 環境変数を指定してください。
+
+```bash
+PORT=8000 python app/app.py
+```
 
 ## テスト
 
