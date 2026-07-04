@@ -6,10 +6,11 @@ Two modes are supported:
   full-bleed picture on its own slide. This reproduces the PDF's appearance
   exactly (fonts, vector art, layout) at the cost of the text no longer
   being editable in PowerPoint.
-- "editable": text spans, images are extracted from the PDF and rebuilt as
-  editable PowerPoint text boxes / pictures, positioned to match the
-  original layout. Complex vector graphics, tables and exotic fonts may not
-  be reproduced perfectly.
+- "editable": each page is rasterized the same way, but the original text
+  is first surgically removed from the page (via PDF redaction) so the
+  background image keeps every non-text visual element (vector art,
+  photos, gradients) while real, independently editable PowerPoint text
+  boxes are overlaid matching the extracted text's position/font/size/color.
 """
 from __future__ import annotations
 
@@ -17,9 +18,8 @@ import io
 from dataclasses import dataclass
 
 import fitz  # PyMuPDF
-from PIL import Image
 from pptx import Presentation
-from pptx.util import Emu, Pt
+from pptx.util import Pt
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN
 
@@ -85,7 +85,37 @@ def convert_image_mode(doc: fitz.Document, prs: Presentation, dpi: int = DEFAULT
         )
 
 
-def _add_text_span_box(slide, span: dict, line_bbox, page_height: float) -> None:
+# PDF text render modes (see PDF spec 9.3.6 "Text Rendering Mode", as
+# reported by fitz.Page.get_texttrace()'s "type" field). 3 = invisible fill
+# (used for e.g. OCR text layers over a scanned image), 7 = invisible clip.
+INVISIBLE_RENDER_MODES = (3, 7)
+
+
+def _extract_visible_text_spans(page: fitz.Page) -> list[dict]:
+    """Collect visible text spans (bbox/font/size/color/flags/text), skipping
+    invisible render modes so OCR-only text layers are left untouched."""
+    spans = []
+    for trace in page.get_texttrace():
+        if trace.get("type") in INVISIBLE_RENDER_MODES:
+            continue
+        text = "".join(chr(ch[0]) for ch in trace.get("chars", []))
+        if not text.strip():
+            continue
+        r, g, b = trace.get("color", (0, 0, 0))
+        spans.append(
+            {
+                "text": text,
+                "bbox": trace["bbox"],
+                "font": trace.get("font", ""),
+                "size": trace.get("size", 12),
+                "flags": trace.get("flags", 0),
+                "color": (int(r * 255), int(g * 255), int(b * 255)),
+            }
+        )
+    return spans
+
+
+def _add_text_span_box(slide, span: dict) -> None:
     x0, y0, x1, y1 = span["bbox"]
     width = max(x1 - x0, 1)
     height = max(y1 - y0, 1)
@@ -113,10 +143,7 @@ def _add_text_span_box(slide, span: dict, line_bbox, page_height: float) -> None
     flags = span.get("flags", 0)
     font.bold = bool(flags & FLAG_BOLD)
     font.italic = bool(flags & FLAG_ITALIC)
-    color_int = span.get("color", 0)
-    r = (color_int >> 16) & 0xFF
-    g = (color_int >> 8) & 0xFF
-    b = color_int & 0xFF
+    r, g, b = span.get("color", (0, 0, 0))
     font.color.rgb = RGBColor(r, g, b)
     fontname = span.get("font", "")
     if "+" in fontname:
@@ -126,7 +153,14 @@ def _add_text_span_box(slide, span: dict, line_bbox, page_height: float) -> None
         font.name = fontname
 
 
-def convert_editable_mode(doc: fitz.Document, prs: Presentation) -> None:
+def convert_editable_mode(doc: fitz.Document, prs: Presentation, dpi: int = DEFAULT_DPI) -> None:
+    """Rebuild each page as a background image (all vector art, photos and
+    gradients rasterized, exactly as in image mode) with the original text
+    content surgically removed via PDF redaction, then overlay real,
+    independently editable PowerPoint text boxes matching the extracted
+    text's position/font/size/color. This keeps full visual fidelity for
+    everything that isn't text while making the text itself editable.
+    """
     first_page = doc[0]
     slide_w_pt = first_page.rect.width
     slide_h_pt = first_page.rect.height
@@ -134,8 +168,17 @@ def convert_editable_mode(doc: fitz.Document, prs: Presentation) -> None:
     prs.slide_height = _pt_to_emu(slide_h_pt)
 
     blank_layout = prs.slide_layouts[6]
+    zoom = dpi / 72.0
+    matrix = fitz.Matrix(zoom, zoom)
 
     for page in doc:
+        spans = _extract_visible_text_spans(page)
+
+        for span in spans:
+            page.add_redact_annot(fitz.Rect(span["bbox"]), fill=None)
+        if spans:
+            page.apply_redactions(images=0, graphics=0, text=0)
+
         slide = prs.slides.add_slide(blank_layout)
         left, top, scale_w, scale_h = _fit_size(
             page.rect.width, page.rect.height, slide_w_pt, slide_h_pt
@@ -143,46 +186,28 @@ def convert_editable_mode(doc: fitz.Document, prs: Presentation) -> None:
         sx = scale_w / page.rect.width
         sy = scale_h / page.rect.height
 
-        # Images first so text draws on top.
-        for img_info in page.get_image_info(xrefs=True):
-            xref = img_info.get("xref", 0)
-            bbox = img_info.get("bbox")
-            if not xref or not bbox:
-                continue
-            try:
-                base_image = doc.extract_image(xref)
-            except Exception:
-                continue
-            img_bytes = base_image.get("image")
-            if not img_bytes:
-                continue
-            x0, y0, x1, y1 = bbox
-            slide.shapes.add_picture(
-                io.BytesIO(img_bytes),
-                _pt_to_emu(left + x0 * sx),
-                _pt_to_emu(top + y0 * sy),
-                width=_pt_to_emu((x1 - x0) * sx),
-                height=_pt_to_emu((y1 - y0) * sy),
-            )
+        pix = page.get_pixmap(matrix=matrix, alpha=False)
+        slide.shapes.add_picture(
+            io.BytesIO(pix.tobytes("png")),
+            _pt_to_emu(left),
+            _pt_to_emu(top),
+            width=_pt_to_emu(scale_w),
+            height=_pt_to_emu(scale_h),
+        )
 
-        text_dict = page.get_text("dict")
-        for block in text_dict.get("blocks", []):
-            if block.get("type") != 0:
-                continue
-            for line in block.get("lines", []):
-                for span in line.get("spans", []):
-                    if not span.get("text", "").strip():
-                        continue
-                    scaled_span = dict(span)
-                    x0, y0, x1, y1 = span["bbox"]
-                    scaled_span["bbox"] = (
-                        left + x0 * sx,
-                        top + y0 * sy,
-                        left + x1 * sx,
-                        top + y1 * sy,
-                    )
-                    scaled_span["size"] = span["size"] * min(sx, sy)
-                    _add_text_span_box(slide, scaled_span, line.get("bbox"), page.rect.height)
+        for span in spans:
+            x0, y0, x1, y1 = span["bbox"]
+            scaled_span = dict(
+                span,
+                bbox=(
+                    left + x0 * sx,
+                    top + y0 * sy,
+                    left + x1 * sx,
+                    top + y1 * sy,
+                ),
+                size=span["size"] * min(sx, sy),
+            )
+            _add_text_span_box(slide, scaled_span)
 
 
 def convert_pdf_to_pptx(pdf_path: str, pptx_path: str, mode: str = "image", dpi: int = DEFAULT_DPI) -> ConversionResult:
@@ -197,7 +222,7 @@ def convert_pdf_to_pptx(pdf_path: str, pptx_path: str, mode: str = "image", dpi:
         if mode == "image":
             convert_image_mode(doc, prs, dpi=dpi)
         else:
-            convert_editable_mode(doc, prs)
+            convert_editable_mode(doc, prs, dpi=dpi)
         prs.save(pptx_path)
         return ConversionResult(page_count=doc.page_count, mode=mode)
     finally:
