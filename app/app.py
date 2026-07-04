@@ -8,10 +8,17 @@ from werkzeug.utils import secure_filename
 
 from converter import convert_pdf_to_pptx
 
-MAX_CONTENT_LENGTH = 100 * 1024 * 1024  # 100 MB
+# Cloud Run's front-end enforces a hard 32 MB request body limit, so keep
+# our own limit comfortably under that (accounting for multipart overhead).
+MAX_CONTENT_LENGTH = 25 * 1024 * 1024  # 25 MB
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = MAX_CONTENT_LENGTH
+
+
+@app.errorhandler(413)
+def handle_too_large(_exc):
+    return jsonify({"error": "ファイルサイズが大きすぎます(上限25MB)。"}), 413
 
 
 def _is_pdf(file_storage) -> bool:

@@ -59,3 +59,32 @@ python -m pytest tests/ -v
 - PDFのレンダリング・解析には [PyMuPDF](https://pymupdf.readthedocs.io/) を使用。
 - PPTX生成には [python-pptx](https://python-pptx.readthedocs.io/) を使用。
 - アップロードされたファイルは一時ディレクトリに保存され、レスポンス送信後に自動削除されます。
+
+## Google Cloud Runへの公開デプロイ
+
+誰でもインターネット経由でアクセスできるようにするための手順です。事前に [Google Cloud SDK](https://cloud.google.com/sdk/docs/install)(`gcloud` コマンド)をインストールし、GCPプロジェクトを作成しておいてください。
+
+```bash
+# 初回のみ: ログインとプロジェクト設定
+gcloud auth login
+gcloud config set project <あなたのプロジェクトID>
+
+# リポジトリのルート(このDockerfileがある場所)で実行
+gcloud run deploy pdf2ppt \
+  --source . \
+  --region asia-northeast1 \
+  --allow-unauthenticated \
+  --memory 1Gi \
+  --timeout 300 \
+  --max-instances 3
+```
+
+- `gcloud run deploy --source .` が、リポジトリ直下の `Dockerfile` を自動検出してビルド・デプロイまで行います(手動でのDockerビルド・プッシュは不要です)。
+- `--allow-unauthenticated` で認証なしの完全公開になります。
+- `--max-instances` は同時起動できるインスタンス数の上限です。認証なしで公開するため、意図しない大量アクセスによる課金増加を防ぐ目安として設定しています。必要に応じて調整してください。
+- `--timeout` はリクエストあたりの最大処理時間(秒)です。ページ数の多いPDFやOCR処理で時間がかかる場合は増やしてください(最大3600)。
+- デプロイ完了後に表示されるURLが公開アクセス用のURLです。
+
+**公開する上での注意:**
+- このアプリはアップロードされたPDFを解析・OCR処理するため負荷が比較的高く、認証なし公開では不特定多数からの連続アクセスにより課金が増える可能性があります。`--max-instances` に加えて、GCP側で予算アラート(Billing → 予算とアラート)を設定しておくことを推奨します。
+- アップロードされたファイルはリクエスト処理後に自動削除されますが、Cloud Runの各インスタンスは一時的にディスク(メモリ上の`/tmp`)にファイルを書き込みます。永続化はされません。
