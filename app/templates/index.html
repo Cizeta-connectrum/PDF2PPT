@@ -8,6 +8,10 @@
 </head>
 <body>
   <main class="card">
+    <nav class="app-nav">
+      <a href="{{ url_for('index') }}" class="active">PDF変換</a>
+      <a href="{{ url_for('dashboard') }}">アプリ一覧</a>
+    </nav>
     <h1>PDF &rarr; PPTX 変換</h1>
     <p class="lead">PDFファイルを忠実にPowerPoint形式へ変換します。(ファイルサイズ上限: 25MB)</p>
 

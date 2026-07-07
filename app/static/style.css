@@ -144,3 +144,141 @@ button#submit-btn:disabled {
 
 .status.error { color: var(--accent); }
 .status.success { color: #2a8a4a; }
+
+.card-wide {
+  max-width: 720px;
+}
+
+.app-nav {
+  display: flex;
+  gap: 8px;
+  margin: -8px 0 20px;
+}
+
+.app-nav a {
+  padding: 8px 14px;
+  border-radius: 8px;
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.app-nav a:hover {
+  background: rgba(210, 71, 38, 0.08);
+}
+
+.app-nav a.active {
+  color: var(--accent);
+  background: rgba(210, 71, 38, 0.1);
+}
+
+.add-app-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.add-app-form input {
+  flex: 1 1 200px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.add-app-form button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.add-app-form button:hover {
+  background: var(--accent-hover);
+}
+
+.add-app-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.apps-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.app-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  flex-wrap: wrap;
+}
+
+.app-item-name {
+  font-weight: 600;
+  flex: 1 1 auto;
+}
+
+.app-item-url {
+  color: var(--muted);
+  font-size: 0.85rem;
+  flex: 2 1 auto;
+  overflow-wrap: anywhere;
+}
+
+.app-item-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.launch-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 0.15s ease;
+}
+
+.launch-btn:hover {
+  background: var(--accent-hover);
+}
+
+.delete-btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
