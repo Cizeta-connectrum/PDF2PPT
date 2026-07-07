@@ -1,59 +1,58 @@
-import json
 import os
-import threading
-import uuid
-from datetime import datetime, timezone
 
-_DEFAULT_DATA_FILE = os.path.join(os.path.dirname(__file__), "data", "apps.json")
-_lock = threading.Lock()
+import requests
 
+GAS_WEBAPP_URL = os.environ.get("GAS_WEBAPP_URL")
+GAS_API_TOKEN = os.environ.get("GAS_API_TOKEN")
 
-def _data_file() -> str:
-    return os.environ.get("APPS_DATA_FILE", _DEFAULT_DATA_FILE)
+REQUEST_TIMEOUT = 10
 
 
-def _load() -> list:
-    path = _data_file()
-    if not os.path.exists(path):
-        return []
-    with open(path, "r", encoding="utf-8") as f:
-        try:
-            return json.load(f)
-        except json.JSONDecodeError:
-            return []
+class StorageError(RuntimeError):
+    pass
 
 
-def _save(apps: list) -> None:
-    path = _data_file()
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(apps, f, ensure_ascii=False, indent=2)
+def _require_config() -> str:
+    if not GAS_WEBAPP_URL:
+        raise StorageError(
+            "GAS_WEBAPP_URL が設定されていません。GoogleスプレッドシートのGAS Webアプリを"
+            "デプロイし、環境変数を設定してください。"
+        )
+    return GAS_WEBAPP_URL
+
+
+def _unwrap(data):
+    if isinstance(data, dict) and data.get("error"):
+        raise StorageError(str(data["error"]))
+    return data
 
 
 def list_apps() -> list:
-    with _lock:
-        return sorted(_load(), key=lambda a: a["created_at"])
+    url = _require_config()
+    resp = requests.get(url, params={"token": GAS_API_TOKEN}, timeout=REQUEST_TIMEOUT)
+    resp.raise_for_status()
+    apps = _unwrap(resp.json())
+    return sorted(apps, key=lambda a: a["created_at"])
 
 
 def add_app(name: str, url: str) -> dict:
-    app_record = {
-        "id": uuid.uuid4().hex,
-        "name": name,
-        "url": url,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    }
-    with _lock:
-        apps = _load()
-        apps.append(app_record)
-        _save(apps)
-    return app_record
+    endpoint = _require_config()
+    resp = requests.post(
+        endpoint,
+        json={"action": "add", "name": name, "url": url, "token": GAS_API_TOKEN},
+        timeout=REQUEST_TIMEOUT,
+    )
+    resp.raise_for_status()
+    return _unwrap(resp.json())
 
 
 def delete_app(app_id: str) -> bool:
-    with _lock:
-        apps = _load()
-        remaining = [a for a in apps if a["id"] != app_id]
-        if len(remaining) == len(apps):
-            return False
-        _save(remaining)
-        return True
+    endpoint = _require_config()
+    resp = requests.post(
+        endpoint,
+        json={"action": "delete", "id": app_id, "token": GAS_API_TOKEN},
+        timeout=REQUEST_TIMEOUT,
+    )
+    resp.raise_for_status()
+    data = _unwrap(resp.json())
+    return bool(data.get("success"))

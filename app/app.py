@@ -53,7 +53,10 @@ def _is_valid_url(url: str) -> bool:
 
 @app.route("/api/apps", methods=["GET"])
 def list_apps():
-    return jsonify(storage.list_apps())
+    try:
+        return jsonify(storage.list_apps())
+    except storage.StorageError as exc:
+        return jsonify({"error": str(exc)}), 502
 
 
 @app.route("/api/apps", methods=["POST"])
@@ -67,13 +70,20 @@ def create_app_entry():
     if not _is_valid_url(url):
         return jsonify({"error": "有効なURL(http://またはhttps://)を入力してください。"}), 400
 
-    app_record = storage.add_app(name, url)
+    try:
+        app_record = storage.add_app(name, url)
+    except storage.StorageError as exc:
+        return jsonify({"error": str(exc)}), 502
     return jsonify(app_record), 201
 
 
 @app.route("/api/apps/<app_id>", methods=["DELETE"])
 def delete_app_entry(app_id):
-    if storage.delete_app(app_id):
+    try:
+        deleted = storage.delete_app(app_id)
+    except storage.StorageError as exc:
+        return jsonify({"error": str(exc)}), 502
+    if deleted:
         return "", 204
     return jsonify({"error": "指定されたアプリが見つかりません。"}), 404
 
