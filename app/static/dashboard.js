@@ -14,19 +14,31 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+function faviconUrl(url) {
+  try {
+    const host = new URL(url).hostname;
+    return `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(host)}`;
+  } catch (_) {
+    return "";
+  }
+}
+
 function renderApps(apps) {
   listEl.innerHTML = "";
   emptyEl.hidden = apps.length > 0;
 
   for (const app of apps) {
-    const li = document.createElement("li");
-    li.className = "app-item";
-    li.innerHTML = `
-      <span class="app-item-name">${escapeHtml(app.name)}</span>
-      <span class="app-item-url">${escapeHtml(app.url)}</span>
-      <a href="${encodeURI(app.url)}" target="_blank" rel="noopener noreferrer" class="launch-btn">起動</a>
+    const card = document.createElement("a");
+    card.className = "app-card";
+    card.href = encodeURI(app.url);
+    card.target = "_blank";
+    card.rel = "noopener noreferrer";
+    card.innerHTML = `
+      <img class="app-card-icon" src="${faviconUrl(app.url)}" alt="" width="40" height="40" loading="lazy">
+      <span class="app-card-name">${escapeHtml(app.name)}</span>
+      <span class="app-card-url">${escapeHtml(app.url)}</span>
     `;
-    listEl.appendChild(li);
+    listEl.appendChild(card);
   }
 }
 
