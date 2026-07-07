@@ -303,15 +303,8 @@ button#submit-btn:disabled {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--card-bg);
   overflow: hidden;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
-}
-
-.app-card-icon {
-  width: 28px;
-  height: 28px;
-  object-fit: contain;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
 }
 
 .app-card-icon-fallback {
@@ -322,7 +315,7 @@ button#submit-btn:disabled {
   justify-content: center;
   color: #fff;
   font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 1.2rem;
 }
 
 .app-card-name {
@@ -334,7 +327,10 @@ button#submit-btn:disabled {
 .app-card-url {
   color: var(--muted);
   font-size: 0.72rem;
-  overflow-wrap: anywhere;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .delete-btn {

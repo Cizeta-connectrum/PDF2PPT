@@ -26,12 +26,11 @@ function setStatus(message, kind) {
   statusEl.className = "status" + (kind ? ` ${kind}` : "");
 }
 
-function faviconUrl(url) {
+function hostnameOf(url) {
   try {
-    const host = new URL(url, window.location.origin).hostname;
-    return `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(host)}`;
+    return new URL(url).hostname;
   } catch (_) {
-    return "";
+    return url;
   }
 }
 
@@ -47,32 +46,13 @@ function gradientFor(name) {
 function buildIcon(app) {
   const wrap = document.createElement("div");
   wrap.className = "app-card-icon-wrap";
+  wrap.style.background = gradientFor(app.name);
 
-  if (app.builtin) {
-    wrap.style.background = gradientFor(app.name);
-    const fallback = document.createElement("div");
-    fallback.className = "app-card-icon-fallback";
-    fallback.textContent = app.emoji || "★";
-    wrap.appendChild(fallback);
-    return wrap;
-  }
+  const glyph = document.createElement("div");
+  glyph.className = "app-card-icon-fallback";
+  glyph.textContent = app.builtin ? app.emoji || "★" : (app.name.trim().charAt(0) || "?").toUpperCase();
+  wrap.appendChild(glyph);
 
-  const img = document.createElement("img");
-  img.className = "app-card-icon";
-  img.src = faviconUrl(app.url);
-  img.alt = "";
-  img.width = 28;
-  img.height = 28;
-  img.loading = "lazy";
-  img.onerror = () => {
-    wrap.innerHTML = "";
-    wrap.style.background = gradientFor(app.name);
-    const fallback = document.createElement("div");
-    fallback.className = "app-card-icon-fallback";
-    fallback.textContent = (app.name.trim().charAt(0) || "?").toUpperCase();
-    wrap.appendChild(fallback);
-  };
-  wrap.appendChild(img);
   return wrap;
 }
 
@@ -101,7 +81,8 @@ function renderApps(apps) {
     if (!app.builtin) {
       const urlEl = document.createElement("span");
       urlEl.className = "app-card-url";
-      urlEl.textContent = app.url;
+      urlEl.textContent = hostnameOf(app.url);
+      urlEl.title = app.url;
       link.appendChild(urlEl);
     }
 
