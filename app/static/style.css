@@ -173,40 +173,23 @@ button#submit-btn:disabled {
   background: rgba(210, 71, 38, 0.1);
 }
 
-.add-app-form {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 20px;
-}
-
-.add-app-form input {
-  flex: 1 1 200px;
-  padding: 10px 12px;
+#refresh-btn {
+  padding: 8px 18px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: var(--bg);
+  background: transparent;
   color: var(--text);
-  font-size: 0.95rem;
-}
-
-.add-app-form button {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 8px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 0.9rem;
   cursor: pointer;
-  transition: background 0.15s ease;
+  margin-bottom: 16px;
 }
 
-.add-app-form button:hover {
-  background: var(--accent-hover);
+#refresh-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
-.add-app-form button:disabled {
+#refresh-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -242,12 +225,6 @@ button#submit-btn:disabled {
   overflow-wrap: anywhere;
 }
 
-.app-item-actions {
-  display: flex;
-  gap: 8px;
-  margin-left: auto;
-}
-
 .launch-btn {
   padding: 6px 14px;
   border-radius: 6px;
@@ -256,29 +233,10 @@ button#submit-btn:disabled {
   text-decoration: none;
   font-size: 0.85rem;
   font-weight: 600;
+  margin-left: auto;
   transition: background 0.15s ease;
 }
 
 .launch-btn:hover {
   background: var(--accent-hover);
-}
-
-.delete-btn {
-  padding: 6px 14px;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--muted);
-  font-size: 0.85rem;
-  cursor: pointer;
-}
-
-.delete-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
-.delete-btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
