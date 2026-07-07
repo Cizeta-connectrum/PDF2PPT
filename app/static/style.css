@@ -1,27 +1,42 @@
 :root {
   color-scheme: light dark;
-  --bg: #f5f6f8;
-  --card-bg: #ffffff;
-  --text: #1c1e21;
-  --muted: #616770;
-  --accent: #d24726;
-  --accent-hover: #b23a1d;
-  --border: #d9dbe0;
+  --bg: #eef0f6;
+  --card-bg: rgba(255, 255, 255, 0.72);
+  --text: #14161c;
+  --muted: #5c6270;
+  --accent: #7c3aed;
+  --accent-2: #ec4899;
+  --accent-3: #f97316;
+  --accent-hover: #6d28d9;
+  --border: rgba(20, 22, 28, 0.09);
+  --gradient: linear-gradient(135deg, var(--accent), var(--accent-2));
+  --blob-1: rgba(124, 58, 237, 0.22);
+  --blob-2: rgba(236, 72, 153, 0.18);
+  --blob-3: rgba(249, 115, 22, 0.14);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #17181a;
-    --card-bg: #232427;
-    --text: #f0f1f3;
-    --muted: #a2a6ad;
-    --accent: #e8643f;
-    --accent-hover: #ff7d55;
-    --border: #3a3b3f;
+    --bg: #0a0b10;
+    --card-bg: rgba(255, 255, 255, 0.05);
+    --text: #f2f3f7;
+    --muted: #9aa0b0;
+    --accent: #a78bfa;
+    --accent-2: #f472b6;
+    --accent-3: #fb923c;
+    --accent-hover: #c4b5fd;
+    --border: rgba(255, 255, 255, 0.1);
+    --blob-1: rgba(167, 139, 250, 0.28);
+    --blob-2: rgba(244, 114, 182, 0.2);
+    --blob-3: rgba(251, 146, 60, 0.16);
   }
 }
 
 * { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+}
 
 body {
   margin: 0;
@@ -33,20 +48,45 @@ body {
   color: var(--text);
   font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif;
   padding: 24px;
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(38rem 32rem at 12% 8%, var(--blob-1), transparent 60%),
+    radial-gradient(34rem 30rem at 88% 18%, var(--blob-2), transparent 60%),
+    radial-gradient(40rem 34rem at 50% 100%, var(--blob-3), transparent 60%);
 }
 
 .card {
+  position: relative;
+  z-index: 1;
   background: var(--card-bg);
-  border-radius: 12px;
-  padding: 32px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 36px;
   max-width: 560px;
   width: 100%;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 h1 {
   margin: 0 0 8px;
-  font-size: 1.6rem;
+  font-size: 1.7rem;
+  letter-spacing: -0.02em;
+  background: var(--gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  display: inline-block;
 }
 
 .lead {
@@ -57,7 +97,7 @@ h1 {
 .dropzone {
   position: relative;
   border: 2px dashed var(--border);
-  border-radius: 10px;
+  border-radius: 14px;
   padding: 32px 16px;
   text-align: center;
   cursor: pointer;
@@ -66,7 +106,7 @@ h1 {
 
 .dropzone.dragover {
   border-color: var(--accent);
-  background: rgba(210, 71, 38, 0.06);
+  background: rgba(124, 58, 237, 0.08);
 }
 
 .dropzone input[type="file"] {
@@ -99,13 +139,20 @@ h1 {
   align-items: flex-start;
   padding: 12px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 12px;
   margin-bottom: 8px;
   cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.mode-option:has(input:checked) {
+  border-color: var(--accent);
+  background: rgba(124, 58, 237, 0.06);
 }
 
 .mode-option input {
   margin-top: 4px;
+  accent-color: var(--accent);
 }
 
 .mode-option small {
@@ -116,24 +163,28 @@ h1 {
 
 button#submit-btn {
   width: 100%;
-  padding: 12px;
+  padding: 13px;
   border: none;
-  border-radius: 8px;
-  background: var(--accent);
+  border-radius: 10px;
+  background: var(--gradient);
   color: #fff;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease;
+  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.3);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
 }
 
 button#submit-btn:hover {
-  background: var(--accent-hover);
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow: 0 12px 28px rgba(124, 58, 237, 0.4);
 }
 
 button#submit-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
 }
 
 .status {
@@ -142,8 +193,8 @@ button#submit-btn:disabled {
   font-size: 0.95rem;
 }
 
-.status.error { color: var(--accent); }
-.status.success { color: #2a8a4a; }
+.status.error { color: var(--accent-3); }
+.status.success { color: #22c55e; }
 
 .card-wide {
   max-width: 900px;
@@ -156,6 +207,7 @@ button#submit-btn:disabled {
   text-decoration: none;
   font-size: 0.9rem;
   font-weight: 600;
+  transition: color 0.15s ease;
 }
 
 .back-link:hover {
@@ -164,52 +216,61 @@ button#submit-btn:disabled {
 
 .add-app-form {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 }
 
 .add-app-form input {
   flex: 1 1 200px;
-  padding: 10px 12px;
+  padding: 11px 14px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--bg);
+  border-radius: 10px;
+  background: rgba(127, 127, 127, 0.06);
   color: var(--text);
   font-size: 0.95rem;
 }
 
+.add-app-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 .add-app-form button {
-  padding: 10px 20px;
+  padding: 11px 24px;
   border: none;
-  border-radius: 8px;
-  background: var(--accent);
+  border-radius: 10px;
+  background: var(--gradient);
   color: #fff;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease;
+  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.28);
+  transition: transform 0.15s ease, filter 0.15s ease;
 }
 
 .add-app-form button:hover {
-  background: var(--accent-hover);
+  transform: translateY(-1px);
+  filter: brightness(1.06);
 }
 
 .add-app-form button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+  transform: none;
 }
 
 .apps-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 16px;
 }
 
 .app-card-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
 }
 
 .app-card {
@@ -217,28 +278,51 @@ button#submit-btn:disabled {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 8px;
-  padding: 20px 12px;
+  gap: 10px;
+  padding: 22px 14px;
+  width: 100%;
   border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--bg);
+  border-radius: 16px;
+  background: rgba(127, 127, 127, 0.05);
   color: var(--text);
   text-decoration: none;
-  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .app-card:hover {
-  border-color: var(--accent);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  border-color: transparent;
+  background: rgba(124, 58, 237, 0.08);
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 14px 30px rgba(124, 58, 237, 0.22);
+}
+
+.app-card-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--card-bg);
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
 }
 
 .app-card-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 8px;
-  background: var(--card-bg);
+  width: 28px;
+  height: 28px;
   object-fit: contain;
+}
+
+.app-card-icon-fallback {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.1rem;
 }
 
 .app-card-name {
@@ -249,21 +333,22 @@ button#submit-btn:disabled {
 
 .app-card-url {
   color: var(--muted);
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   overflow-wrap: anywhere;
 }
 
 .delete-btn {
-  padding: 4px 0;
+  padding: 2px 0;
   border: none;
   background: transparent;
   color: var(--muted);
   font-size: 0.75rem;
   cursor: pointer;
+  transition: color 0.15s ease;
 }
 
 .delete-btn:hover {
-  color: var(--accent);
+  color: var(--accent-3);
 }
 
 .delete-btn:disabled {

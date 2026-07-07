@@ -2,7 +2,17 @@ const PDF_CONVERTER_APP = {
   name: "PDF変換",
   url: "/convert-tool",
   builtin: true,
+  emoji: "📄",
 };
+
+const AVATAR_GRADIENTS = [
+  ["#7c3aed", "#ec4899"],
+  ["#2563eb", "#06b6d4"],
+  ["#16a34a", "#84cc16"],
+  ["#f97316", "#ef4444"],
+  ["#0ea5e9", "#6366f1"],
+  ["#db2777", "#f97316"],
+];
 
 const form = document.getElementById("add-app-form");
 const nameInput = document.getElementById("app-name");
@@ -16,12 +26,6 @@ function setStatus(message, kind) {
   statusEl.className = "status" + (kind ? ` ${kind}` : "");
 }
 
-function escapeHtml(str) {
-  const div = document.createElement("div");
-  div.textContent = str;
-  return div.innerHTML;
-}
-
 function faviconUrl(url) {
   try {
     const host = new URL(url, window.location.origin).hostname;
@@ -29,6 +33,47 @@ function faviconUrl(url) {
   } catch (_) {
     return "";
   }
+}
+
+function gradientFor(name) {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  }
+  const [a, b] = AVATAR_GRADIENTS[hash % AVATAR_GRADIENTS.length];
+  return `linear-gradient(135deg, ${a}, ${b})`;
+}
+
+function buildIcon(app) {
+  const wrap = document.createElement("div");
+  wrap.className = "app-card-icon-wrap";
+
+  if (app.builtin) {
+    wrap.style.background = gradientFor(app.name);
+    const fallback = document.createElement("div");
+    fallback.className = "app-card-icon-fallback";
+    fallback.textContent = app.emoji || "★";
+    wrap.appendChild(fallback);
+    return wrap;
+  }
+
+  const img = document.createElement("img");
+  img.className = "app-card-icon";
+  img.src = faviconUrl(app.url);
+  img.alt = "";
+  img.width = 28;
+  img.height = 28;
+  img.loading = "lazy";
+  img.onerror = () => {
+    wrap.innerHTML = "";
+    wrap.style.background = gradientFor(app.name);
+    const fallback = document.createElement("div");
+    fallback.className = "app-card-icon-fallback";
+    fallback.textContent = (app.name.trim().charAt(0) || "?").toUpperCase();
+    wrap.appendChild(fallback);
+  };
+  wrap.appendChild(img);
+  return wrap;
 }
 
 function renderApps(apps) {
@@ -45,11 +90,21 @@ function renderApps(apps) {
       link.target = "_blank";
       link.rel = "noopener noreferrer";
     }
-    link.innerHTML = `
-      <img class="app-card-icon" src="${faviconUrl(app.url)}" alt="" width="40" height="40" loading="lazy">
-      <span class="app-card-name">${escapeHtml(app.name)}</span>
-      ${app.builtin ? "" : `<span class="app-card-url">${escapeHtml(app.url)}</span>`}
-    `;
+
+    link.appendChild(buildIcon(app));
+
+    const nameEl = document.createElement("span");
+    nameEl.className = "app-card-name";
+    nameEl.textContent = app.name;
+    link.appendChild(nameEl);
+
+    if (!app.builtin) {
+      const urlEl = document.createElement("span");
+      urlEl.className = "app-card-url";
+      urlEl.textContent = app.url;
+      link.appendChild(urlEl);
+    }
+
     wrapper.appendChild(link);
 
     if (!app.builtin) {
