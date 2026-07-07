@@ -3,26 +3,23 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>アプリ一覧 - ダッシュボード</title>
+  <title>アプリ一覧</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
   <main class="card card-wide">
-    <nav class="app-nav">
-      <a href="{{ url_for('index') }}">PDF変換</a>
-      <a href="{{ url_for('dashboard') }}" class="active">アプリ一覧</a>
-    </nav>
     <h1>アプリ一覧</h1>
-    <p class="lead">
-      アプリの追加・削除はGoogleスプレッドシートを直接編集してください。ここには
-      スプレッドシートの内容がそのまま表示されます。
-    </p>
+    <p class="lead">作ったアプリのタイトルとURLを登録しておくと、カードをクリックするだけで起動できます。</p>
 
-    <button type="button" id="refresh-btn">更新</button>
+    <form id="add-app-form" class="add-app-form">
+      <input type="text" id="app-name" name="name" placeholder="アプリ名(例: 家計簿アプリ)" required>
+      <input type="url" id="app-url" name="url" placeholder="https://example.com" required>
+      <button type="submit" id="add-app-btn">追加</button>
+    </form>
+
     <div id="apps-status" class="status" role="status" aria-live="polite"></div>
 
     <div id="apps-list" class="apps-grid"></div>
-    <p id="apps-empty" class="lead" hidden>登録されたアプリがありません。スプレッドシートに行を追加してください。</p>
   </main>
 
   <script src="{{ url_for('static', filename='dashboard.js') }}"></script>

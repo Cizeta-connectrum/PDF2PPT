@@ -1,78 +1,14 @@
 import os
 import sys
-from unittest.mock import patch
 
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "app"))
 
 
-class FakeResponse:
-    def __init__(self, text, status_code=200):
-        self.text = text
-        self.status_code = status_code
-
-    def raise_for_status(self):
-        if self.status_code >= 400:
-            raise RuntimeError(f"HTTP {self.status_code}")
-
-
-SAMPLE_CSV = "name,url\nKakeibo,https://kakeibo.example.com\nTodo,https://todo.example.com\n"
-
-
 @pytest.fixture
-def client(monkeypatch):
-    monkeypatch.setenv("SHEET_CSV_URL", "https://docs.google.com/spreadsheets/d/e/fake/pub?output=csv")
-
-    import importlib
-    import app as app_module
-    import storage as storage_module
-    importlib.reload(storage_module)
-    importlib.reload(app_module)
-
-    with patch.object(app_module.storage, "requests") as mock_requests:
-        mock_requests.get.return_value = FakeResponse(SAMPLE_CSV)
-
-        app_module.app.config["TESTING"] = True
-        with app_module.app.test_client() as c:
-            yield c
-
-
-def test_dashboard_page_renders(client):
-    response = client.get("/dashboard")
-    assert response.status_code == 200
-    assert "アプリ一覧".encode() in response.data
-
-
-def test_list_apps_returns_rows_from_csv(client):
-    response = client.get("/api/apps")
-    assert response.status_code == 200
-    assert response.get_json() == [
-        {"name": "Kakeibo", "url": "https://kakeibo.example.com"},
-        {"name": "Todo", "url": "https://todo.example.com"},
-    ]
-
-
-def test_list_apps_skips_incomplete_rows(monkeypatch):
-    monkeypatch.setenv("SHEET_CSV_URL", "https://docs.google.com/spreadsheets/d/e/fake/pub?output=csv")
-
-    import importlib
-    import app as app_module
-    import storage as storage_module
-    importlib.reload(storage_module)
-    importlib.reload(app_module)
-
-    csv_with_gap = "name,url\nGood,https://good.example.com\n,https://missing-name.example.com\nNoUrl,\n"
-    with patch.object(app_module.storage, "requests") as mock_requests:
-        mock_requests.get.return_value = FakeResponse(csv_with_gap)
-        app_module.app.config["TESTING"] = True
-        with app_module.app.test_client() as c:
-            response = c.get("/api/apps")
-            assert response.get_json() == [{"name": "Good", "url": "https://good.example.com"}]
-
-
-def test_list_apps_without_config_returns_error(monkeypatch):
-    monkeypatch.delenv("SHEET_CSV_URL", raising=False)
+def client(tmp_path, monkeypatch):
+    monkeypatch.setenv("APPS_DATA_FILE", str(tmp_path / "apps.json"))
 
     import importlib
     import app as app_module
@@ -82,5 +18,61 @@ def test_list_apps_without_config_returns_error(monkeypatch):
 
     app_module.app.config["TESTING"] = True
     with app_module.app.test_client() as c:
-        response = c.get("/api/apps")
-        assert response.status_code == 502
+        yield c
+
+
+def test_dashboard_page_renders(client):
+    response = client.get("/")
+    assert response.status_code == 200
+    assert "アプリ一覧".encode() in response.data
+
+
+def test_converter_page_renders(client):
+    response = client.get("/convert-tool")
+    assert response.status_code == 200
+    assert "PDF".encode() in response.data
+
+
+def test_list_apps_initially_empty(client):
+    response = client.get("/api/apps")
+    assert response.status_code == 200
+    assert response.get_json() == []
+
+
+def test_create_and_list_app(client):
+    response = client.post("/api/apps", json={"name": "My App", "url": "https://example.com"})
+    assert response.status_code == 201
+    created = response.get_json()
+    assert created["name"] == "My App"
+    assert created["url"] == "https://example.com"
+    assert "id" in created
+
+    response = client.get("/api/apps")
+    apps = response.get_json()
+    assert len(apps) == 1
+    assert apps[0]["id"] == created["id"]
+
+
+def test_create_app_rejects_missing_name(client):
+    response = client.post("/api/apps", json={"name": "", "url": "https://example.com"})
+    assert response.status_code == 400
+
+
+def test_create_app_rejects_invalid_url(client):
+    response = client.post("/api/apps", json={"name": "Bad", "url": "not-a-url"})
+    assert response.status_code == 400
+
+
+def test_delete_app(client):
+    created = client.post("/api/apps", json={"name": "To Delete", "url": "https://example.com"}).get_json()
+
+    response = client.delete(f"/api/apps/{created['id']}")
+    assert response.status_code == 204
+
+    apps = client.get("/api/apps").get_json()
+    assert apps == []
+
+
+def test_delete_missing_app_returns_404(client):
+    response = client.delete("/api/apps/does-not-exist")
+    assert response.status_code == 404

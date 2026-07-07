@@ -1,33 +1,59 @@
-import csv
-import io
+import json
 import os
+import threading
+import uuid
+from datetime import datetime, timezone
 
-import requests
-
-SHEET_CSV_URL = os.environ.get("SHEET_CSV_URL")
-REQUEST_TIMEOUT = 10
+_DEFAULT_DATA_FILE = os.path.join(os.path.dirname(__file__), "data", "apps.json")
+_lock = threading.Lock()
 
 
-class StorageError(RuntimeError):
-    pass
+def _data_file() -> str:
+    return os.environ.get("APPS_DATA_FILE", _DEFAULT_DATA_FILE)
+
+
+def _load() -> list:
+    path = _data_file()
+    if not os.path.exists(path):
+        return []
+    with open(path, "r", encoding="utf-8") as f:
+        try:
+            return json.load(f)
+        except json.JSONDecodeError:
+            return []
+
+
+def _save(apps: list) -> None:
+    path = _data_file()
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(apps, f, ensure_ascii=False, indent=2)
 
 
 def list_apps() -> list:
-    if not SHEET_CSV_URL:
-        raise StorageError(
-            "SHEET_CSV_URL が設定されていません。GoogleスプレッドシートをCSVとして公開し、"
-            "そのURLを環境変数に設定してください。"
-        )
+    with _lock:
+        return sorted(_load(), key=lambda a: a["created_at"])
 
-    resp = requests.get(SHEET_CSV_URL, timeout=REQUEST_TIMEOUT)
-    resp.raise_for_status()
 
-    reader = csv.DictReader(io.StringIO(resp.text))
-    apps = []
-    for row in reader:
-        name = (row.get("name") or "").strip()
-        url = (row.get("url") or "").strip()
-        if not name or not url:
-            continue
-        apps.append({"name": name, "url": url})
-    return apps
+def add_app(name: str, url: str) -> dict:
+    app_record = {
+        "id": uuid.uuid4().hex,
+        "name": name,
+        "url": url,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    with _lock:
+        apps = _load()
+        apps.append(app_record)
+        _save(apps)
+    return app_record
+
+
+def delete_app(app_id: str) -> bool:
+    with _lock:
+        apps = _load()
+        remaining = [a for a in apps if a["id"] != app_id]
+        if len(remaining) == len(apps):
+            return False
+        _save(remaining)
+        return True

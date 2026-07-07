@@ -2,6 +2,7 @@ import os
 import shutil
 import tempfile
 import uuid
+from urllib.parse import urlparse
 
 from flask import Flask, after_this_request, render_template, request, send_file, jsonify
 from werkzeug.utils import secure_filename
@@ -32,22 +33,49 @@ def _is_pdf(file_storage) -> bool:
     return header == b"%PDF-"
 
 
+def _is_valid_url(url: str) -> bool:
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return False
+    return parsed.scheme in ("http", "https") and bool(parsed.netloc)
+
+
 @app.route("/")
-def index():
-    return render_template("index.html")
-
-
-@app.route("/dashboard")
 def dashboard():
     return render_template("dashboard.html")
 
 
+@app.route("/convert-tool")
+def converter_page():
+    return render_template("converter.html")
+
+
 @app.route("/api/apps", methods=["GET"])
 def list_apps():
-    try:
-        return jsonify(storage.list_apps())
-    except storage.StorageError as exc:
-        return jsonify({"error": str(exc)}), 502
+    return jsonify(storage.list_apps())
+
+
+@app.route("/api/apps", methods=["POST"])
+def create_app_entry():
+    data = request.get_json(silent=True) or {}
+    name = (data.get("name") or "").strip()
+    url = (data.get("url") or "").strip()
+
+    if not name:
+        return jsonify({"error": "アプリ名を入力してください。"}), 400
+    if not _is_valid_url(url):
+        return jsonify({"error": "有効なURL(http://またはhttps://)を入力してください。"}), 400
+
+    app_record = storage.add_app(name, url)
+    return jsonify(app_record), 201
+
+
+@app.route("/api/apps/<app_id>", methods=["DELETE"])
+def delete_app_entry(app_id):
+    if storage.delete_app(app_id):
+        return "", 204
+    return jsonify({"error": "指定されたアプリが見つかりません。"}), 404
 
 
 @app.route("/convert", methods=["POST"])

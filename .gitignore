@@ -5,3 +5,4 @@ __pycache__/
 *.pptx
 *.pdf
 !tests/**/*.pdf
+app/data/

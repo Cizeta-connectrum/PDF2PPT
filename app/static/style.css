@@ -149,47 +149,53 @@ button#submit-btn:disabled {
   max-width: 900px;
 }
 
-.app-nav {
-  display: flex;
-  gap: 8px;
-  margin: -8px 0 20px;
-}
-
-.app-nav a {
-  padding: 8px 14px;
-  border-radius: 8px;
+.back-link {
+  display: inline-block;
+  margin: -8px 0 16px;
   color: var(--muted);
   text-decoration: none;
-  font-weight: 600;
   font-size: 0.9rem;
+  font-weight: 600;
 }
 
-.app-nav a:hover {
-  background: rgba(210, 71, 38, 0.08);
-}
-
-.app-nav a.active {
+.back-link:hover {
   color: var(--accent);
-  background: rgba(210, 71, 38, 0.1);
 }
 
-#refresh-btn {
-  padding: 8px 18px;
+.add-app-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+
+.add-app-form input {
+  flex: 1 1 200px;
+  padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  background: transparent;
+  background: var(--bg);
   color: var(--text);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+}
+
+.add-app-form button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 600;
   cursor: pointer;
-  margin-bottom: 16px;
+  transition: background 0.15s ease;
 }
 
-#refresh-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
+.add-app-form button:hover {
+  background: var(--accent-hover);
 }
 
-#refresh-btn:disabled {
+.add-app-form button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
@@ -198,6 +204,12 @@ button#submit-btn:disabled {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
   gap: 14px;
+}
+
+.app-card-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .app-card {
@@ -239,4 +251,22 @@ button#submit-btn:disabled {
   color: var(--muted);
   font-size: 0.75rem;
   overflow-wrap: anywhere;
+}
+
+.delete-btn {
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.delete-btn:hover {
+  color: var(--accent);
+}
+
+.delete-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
