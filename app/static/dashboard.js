@@ -26,14 +26,6 @@ function setStatus(message, kind) {
   statusEl.className = "status" + (kind ? ` ${kind}` : "");
 }
 
-function hostnameOf(url) {
-  try {
-    return new URL(url).hostname;
-  } catch (_) {
-    return url;
-  }
-}
-
 function gradientFor(name) {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
@@ -69,6 +61,7 @@ function renderApps(apps) {
     if (!app.builtin) {
       link.target = "_blank";
       link.rel = "noopener noreferrer";
+      link.title = app.url;
     }
 
     link.appendChild(buildIcon(app));
@@ -77,14 +70,6 @@ function renderApps(apps) {
     nameEl.className = "app-card-name";
     nameEl.textContent = app.name;
     link.appendChild(nameEl);
-
-    if (!app.builtin) {
-      const urlEl = document.createElement("span");
-      urlEl.className = "app-card-url";
-      urlEl.textContent = hostnameOf(app.url);
-      urlEl.title = app.url;
-      link.appendChild(urlEl);
-    }
 
     wrapper.appendChild(link);
 

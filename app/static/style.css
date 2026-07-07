@@ -324,15 +324,6 @@ button#submit-btn:disabled {
   overflow-wrap: anywhere;
 }
 
-.app-card-url {
-  color: var(--muted);
-  font-size: 0.72rem;
-  max-width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
 .delete-btn {
   padding: 2px 0;
   border: none;
