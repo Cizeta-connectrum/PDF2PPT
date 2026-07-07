@@ -1,3 +1,13 @@
+---
+title: PDF2PPT
+emoji: 📊
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 8080
+pinned: false
+---
+
 # PDF2PPT
 
 PDFファイルを忠実にPowerPoint(.pptx)へ変換するWebアプリです。
@@ -60,9 +70,33 @@ python -m pytest tests/ -v
 - PPTX生成には [python-pptx](https://python-pptx.readthedocs.io/) を使用。
 - アップロードされたファイルは一時ディレクトリに保存され、レスポンス送信後に自動削除されます。
 
-## Google Cloud Runへの公開デプロイ
+## Hugging Face Spacesへの公開デプロイ(推奨: 無料・カード登録不要)
 
-誰でもインターネット経由でアクセスできるようにするための手順です。事前に [Google Cloud SDK](https://cloud.google.com/sdk/docs/install)(`gcloud` コマンド)をインストールし、GCPプロジェクトを作成しておいてください。
+クレジットカード登録なしで、誰でもどこからでもアクセスできる固定URLで公開する方法です。
+
+1. https://huggingface.co/join でアカウントを作成する(無料、カード登録不要)。
+2. https://huggingface.co/new-space で新しいSpaceを作成する。
+   - **SDK**: `Docker` を選択(このリポジトリの `Dockerfile` がそのまま使われます)。
+   - **Visibility**: `Public` を選択。
+   - 作成すると `https://huggingface.co/spaces/<あなたのユーザー名>/<space名>` というURLのgitリポジトリが発行されます。
+3. このリポジトリの内容をそのSpaceにpushする。
+
+```bash
+git remote add space https://huggingface.co/spaces/<あなたのユーザー名>/<space名>
+git push space claude/pdf-to-ppt-converter-1ii8fb:main
+```
+
+4. pushが完了すると、Space側で自動的にDockerイメージがビルドされます(数分かかります)。ビルド状況はSpaceのページの「Logs」タブで確認できます。
+5. ビルドが終わると `https://<あなたのユーザー名>-<space名>.hf.space` が公開URLになります。これを誰とでも共有できます。
+
+**Hugging Face Spaces(無料CPUプラン)の特性:**
+- クレジットカード登録は一切不要で、課金される可能性は構造的にありません。
+- しばらくアクセスがないとコンテナがスリープし、次のアクセス時に自動的に再起動します(初回アクセス時に数秒〜数十秒の遅延が発生します)。
+- README.md先頭のYAMLメタデータ(`sdk: docker`, `app_port: 8080` など)でSpaceの設定を行っています。変更した場合はこの部分も合わせて確認してください。
+
+## (代替手段) Google Cloud Runへの公開デプロイ
+
+より高いスペック・可用性が必要な場合の代替手段です。クレジットカード登録(billingアカウント)が必要です。事前に [Google Cloud SDK](https://cloud.google.com/sdk/docs/install)(`gcloud` コマンド)をインストールし、GCPプロジェクトを作成しておいてください。
 
 ```bash
 # 初回のみ: ログインとプロジェクト設定
